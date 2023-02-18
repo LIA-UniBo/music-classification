@@ -60,13 +60,18 @@ def filter_df(
         )
 
     if top_n:
+        if len(top_n) > 1:
+            # What should happen?
+            raise NotImplementedError()
+
         for f, n in top_n.items():
-            # TODO: What happens with multiple top_n?
             df = df[df[f].isin(df.value_counts(f, sort=True)[:n].index)]
             print(f"Keeping only the {n} most frequent values of {f}")
 
     if samples:
-        # TODO: What should happen with multiple keep_features?
+        if len(keep_features) > 1:
+            # What should happen?
+            raise NotImplementedError()
         df = sample_df(df, keep_features[0], total_samples=samples)
         print("Applying stratified sampling to the database")
 
@@ -75,14 +80,7 @@ def filter_df(
 
 
 def get_dataset(df):
-    ds = Dataset.from_pandas(df.reset_index(drop=True))  # , features=features
-    ds = ds.rename_column("mp3_path", "audio_path")
-    # ds = ds.add_column(name="audio", column=df["mp3_path"])
-    # ds = ds.cast_column("audio", Audio(
-    #     # sampling_rate=16_000 #TODO: Depends on the model
-    # ))
-
-    return ds
+    return Dataset.from_pandas(df.reset_index(drop=True))
 
 
 def get_label_mappings(ds):
@@ -141,7 +139,9 @@ def add_audio_column(ds):
     return ds
 
 
-def prepare_ds(ds, df, target_class):
+def prepare_ds(
+    ds: Dataset, df, target_features, test_split_size, fixed_mapping=None, save=False
+):
     # Filter dataset `ds` by IDS present in `df`
     for split, ds_split in ds.items():
         id_to_index = {id_: i for i, id_ in enumerate(ds_split["id"])}
@@ -151,37 +151,41 @@ def prepare_ds(ds, df, target_class):
         ds[split] = ds_split.select(indices_to_keep)
 
     ds = ds.remove_columns(["audio", "audio_path", "category"])
-    ds = cast_features(ds, df, target_feature=target_class)
-    ds = ds.rename_column(target_class, "label")
+
+    if fixed_mapping:
+        raise NotImplementedError()
+        # Should force the way features are casted to ClassLabels
+    ds = cast_features(ds, df, target_features=target_features)
+
+    if len(target_features) > 0:
+        raise NotImplementedError()
+
+    ds = ds.rename_column(target_features[0], "label")
+    ds = ds.train_test_split(
+        test_size=test_split_size, stratify_by_column=target_features[0]
+    )
+
+    if save:
+        raise NotImplementedError()
+        ds.save_to_disk(
+            ds.filename + "-".join(target_features)
+        )  # TODO Also other hp? top_n, samples,
     return ds
 
 
-def get_features_dict(df, target_feature):
-    features = {
-        target_feature: {
+def get_features_dict(df, target_features):
+    return {
+        f: {
             "id": None,
-            "names": df[target_feature].unique().tolist(),
+            "names": df[f].unique().tolist(),
             "_type": "ClassLabel",
-        },
+        }
+        for f in target_features
     }
 
-    # for f in dataset_features:
-    #     if f in df:
-    #         features.update(
-    #             {
-    #                 f: {
-    #                     "id": None,
-    #                     "names": df[f].unique().tolist(),
-    #                     "_type": "ClassLabel",
-    #                 }
-    #             }
-    #         )
 
-    return features
-
-
-def cast_features(ds, df, target_feature):
-    features = Features.from_dict(get_features_dict(df, target_feature))
+def cast_features(ds, df, target_features):
+    features = Features.from_dict(get_features_dict(df, target_features))
     for f, args in features.items():
         ds = ds.cast_column(f, args)
     return ds

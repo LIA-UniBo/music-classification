@@ -127,7 +127,7 @@ def add_audio_column(ds):
             ),
         )
 
-    if len(ds) == 1 and ds.keys()[0] == "_":
+    if len(ds) == 1 and "_" in ds.keys():
         ds = ds["_"]
 
     return ds

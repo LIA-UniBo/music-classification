@@ -66,32 +66,8 @@ def filter_df(df, keep_features, audios_dir_path, top_n=None, samples=None):
     return df
 
 
-def get_features_dict(df, dataset_features):
-    features = {
-        "id": {"dtype": "string", "id": None, "_type": "Value"},
-        "mp3_path": {"dtype": "string", "id": None, "_type": "Value"},
-    }
-
-    for f in dataset_features:
-        if f in df:
-            features.update(
-                {
-                    f: {
-                        "id": None,
-                        "names": df[f].unique().tolist(),
-                        "_type": "ClassLabel",
-                    }
-                }
-            )
-
-    return features
-
-
-def get_dataset(df, dataset_features=DATASET_FEATURES):
-    features = Features.from_dict(get_features_dict(df, dataset_features))
-    ds = Dataset.from_pandas(
-        df.reset_index(drop=True), features=features
-    )  # TODO: Save as strings and convert to ClassLabels only in "prepare_df" - how to keep same ids?
+def get_dataset(df):
+    ds = Dataset.from_pandas(df.reset_index(drop=True))  # , features=features
     ds = ds.rename_column("mp3_path", "audio_path")
     # ds = ds.add_column(name="audio", column=df["mp3_path"])
     # ds = ds.cast_column("audio", Audio(
@@ -148,4 +124,50 @@ def add_audio_column(ds):
                 # sampling_rate=16_000 #TODO: Depends on the model
             ),
         )
+    return ds
+
+
+def prepare_ds(ds, df, target_class):
+    # Filter dataset `ds` by IDS present in `df`
+    for split, ds_split in ds.items():
+        id_to_index = {id_: i for i, id_ in enumerate(ds_split["id"])}
+        indices_to_keep = [
+            id_to_index[id_] for id_ in set(df["id"]) if id_ in id_to_index
+        ]
+        ds[split] = ds_split.select(indices_to_keep)
+
+    ds = ds.remove_columns(["audio", "audio_path", "category"])
+    ds = cast_features(ds, df, target_feature=target_class)
+    ds = ds.rename_column(target_class, "label")
+    return ds
+
+
+def get_features_dict(df, target_feature):
+    features = {
+        target_feature: {
+            "id": None,
+            "names": df[target_feature].unique().tolist(),
+            "_type": "ClassLabel",
+        },
+    }
+
+    # for f in dataset_features:
+    #     if f in df:
+    #         features.update(
+    #             {
+    #                 f: {
+    #                     "id": None,
+    #                     "names": df[f].unique().tolist(),
+    #                     "_type": "ClassLabel",
+    #                 }
+    #             }
+    #         )
+
+    return features
+
+
+def cast_features(ds, df, target_feature):
+    features = Features.from_dict(get_features_dict(df, target_feature))
+    for f, args in features.items():
+        ds = ds.cast_column(f, args)
     return ds

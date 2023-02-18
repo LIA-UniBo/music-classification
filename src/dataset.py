@@ -32,37 +32,45 @@ DATASET_FEATURES = [
 ]
 
 
-def filter_df(df, keep_features, audios_dir_path, top_n=None, samples=None):
-    drop_features = [f for f in DATASET_FEATURES if f not in keep_features]
-    print(f"Only {len(DATASET_FEATURES) - len(drop_features)} features considered")
+def filter_df(
+    df, audios_dir_path, keep_features=None, remove_nones=True, top_n=None, samples=None
+):
+    print(f"{len(df)} total samples in dataset")
 
-    print("Using .mp3 files paths")
-    df["mp3_path"] = df["path"].apply(
+    drop_features = []
+    if keep_features:
+        drop_features = [f for f in DATASET_FEATURES if f not in keep_features]
+        print(f"{len(DATASET_FEATURES) - len(drop_features)} features considered")
+
+    # Using .mp3 files paths, base directory is prepended
+    df["audio_path"] = df["path"].apply(
         lambda x: os.path.join(audios_dir_path, x.replace(".caf", ".mp3"))
     )
+    # Using the filepath as ID for each sample
     df["id"] = df["path"].apply(
         lambda x: "".join(x.split(".")[:-1]).replace("/", "_").replace(" ", "_")
     )
     df = df.drop(columns=["path"] + drop_features)
 
-    df_nans = df.isna().any(axis=1)
-    df = df[~df_nans]
-    print(f"Considering only rows without NaNs, {df_nans.sum()} samples discarded")
-    print(f"{len(df)} samples left")
+    if remove_nones:
+        df_nas = df.isna().any(axis=1)
+        df = df[~df_nas]
+        print(
+            f"Considering only rows without non-available values, {df_nas.sum()} samples discarded"
+        )
 
     if top_n:
         for f, n in top_n.items():
             # TODO: What happens with multiple top_n?
             df = df[df[f].isin(df.value_counts(f, sort=True)[:n].index)]
             print(f"Keeping only the {n} most frequent values of {f}")
-            print(f"{len(df)} samples left")
 
     if samples:
         # TODO: What should happen with multiple keep_features?
         df = sample_df(df, keep_features[0], total_samples=samples)
         print("Applying stratified sampling to the database")
-        print(f"{len(df)} samples left")
 
+    print(f"{len(df)} total samples left")
     return df
 
 

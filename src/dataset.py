@@ -117,6 +117,8 @@ def get_preprocess_func(feature_extractor):
 
 
 def add_audio_column(ds):
+    if type(ds) != "dict":
+        ds = {"_": ds}
     for split, ds_split in ds.items():
         ds[split] = ds_split.add_column("audio", ds_split["audio_path"]).cast_column(
             "audio",
@@ -124,6 +126,10 @@ def add_audio_column(ds):
                 # sampling_rate=16_000 #TODO: Depends on the model
             ),
         )
+
+    if len(ds) == 1 and ds.keys()[0] == "_":
+        ds = ds["_"]
+
     return ds
 
 

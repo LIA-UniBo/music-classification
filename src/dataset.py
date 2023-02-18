@@ -138,3 +138,14 @@ def get_preprocess_func(feature_extractor):
         return inputs
 
     return preprocess_function
+
+
+def add_audio_column(ds):
+    for split, ds_split in ds.items():
+        ds[split] = ds_split.add_column("audio", ds_split["audio_path"]).cast_column(
+            "audio",
+            Audio(
+                # sampling_rate=16_000 #TODO: Depends on the model
+            ),
+        )
+    return ds

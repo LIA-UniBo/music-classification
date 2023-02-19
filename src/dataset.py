@@ -125,7 +125,8 @@ def get_preprocess_func(feature_extractor):
 
 
 def add_audio_column(ds):
-    for split, ds_split in wrap_dataset(ds).items():
+    ds = wrap_dataset(ds)
+    for split, ds_split in ds.items():
         ds[split] = ds_split.add_column("audio", ds_split["audio_path"]).cast_column(
             "audio",
             Audio(

@@ -36,3 +36,15 @@ def play_random_audios(ds, quantity, print_features=[]):
         get_label_mappings(ds),
         print_features=print_features,
     )
+
+
+def wrap_dataset(ds):
+    if type(ds) != "dict":
+        ds = {"_": ds}
+    return ds
+
+
+def unwrap_dataset(ds):
+    if len(ds) == 1 and "_" in ds.keys():
+        ds = ds["_"]
+    return ds

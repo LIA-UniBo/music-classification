@@ -3,6 +3,8 @@ import os
 import datasets
 from datasets import Audio, Dataset, Features
 
+from src.utils import unwrap_dataset, wrap_dataset
+
 DATASET_FEATURES = [
     "genre",
     "category",
@@ -123,9 +125,7 @@ def get_preprocess_func(feature_extractor):
 
 
 def add_audio_column(ds):
-    if type(ds) != "dict":
-        ds = {"_": ds}
-    for split, ds_split in ds.items():
+    for split, ds_split in wrap_dataset(ds).items():
         ds[split] = ds_split.add_column("audio", ds_split["audio_path"]).cast_column(
             "audio",
             Audio(
@@ -133,23 +133,16 @@ def add_audio_column(ds):
             ),
         )
 
-    if len(ds) == 1 and "_" in ds.keys():
-        ds = ds["_"]
-
-    return ds
+    return unwrap_dataset(ds)
 
 
 def prepare_ds(
     ds: Dataset, df, target_features, test_split_size, fixed_mapping=None, save=False
 ):
     # Filter dataset `ds` by IDS present in `df`
-    for split, ds_split in ds.items():
-        id_to_index = {id_: i for i, id_ in enumerate(ds_split["id"])}
-        indices_to_keep = [
-            id_to_index[id_] for id_ in set(df["id"]) if id_ in id_to_index
-        ]
-        ds[split] = ds_split.select(indices_to_keep)
-
+    id_to_index = {id_: i for i, id_ in enumerate(ds["id"])}
+    indices_to_keep = [id_to_index[id_] for id_ in set(df["id"]) if id_ in id_to_index]
+    ds = ds.select(indices_to_keep)
     ds = ds.remove_columns(["audio", "audio_path", "category"])
 
     if fixed_mapping:

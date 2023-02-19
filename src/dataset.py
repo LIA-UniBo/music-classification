@@ -175,19 +175,6 @@ def get_dataset_label_mapping(ds):
     return label_maps
 
 
-def get_preprocess_func(feature_extractor):
-    def preprocess_function(examples):
-        audio_arrays = [x["array"] for x in examples["audio"]]
-        inputs = feature_extractor(
-            audio_arrays,
-            sampling_rate=feature_extractor.sampling_rate,
-            max_length=16000,
-            truncation=True,
-        )
-        return inputs
-
-    return preprocess_function
-
 
 def _get_features_dict(df, target_features):
     return {

@@ -17,6 +17,24 @@ PROJECT_NAME = "music-classification-aii"
 FEATURE_ENCODER_TO_HF_HUB = {"wav2vec2": "facebook/wav2vec2-base"}
 
 
+def get_preprocess_func(training_config):
+    feature_extractor = AutoFeatureExtractor.from_pretrained(
+        FEATURE_ENCODER_TO_HF_HUB[training_config["feature_encoder"]]
+    )
+
+    def preprocess_function(examples):
+        audio_arrays = [x["array"] for x in examples["audio"]]
+        inputs = feature_extractor(
+            audio_arrays,
+            sampling_rate=feature_extractor.sampling_rate,
+            max_length=16000,
+            truncation=True,
+        )
+        return inputs
+
+    return preprocess_function
+
+
 def get_metrics_func():
     accuracy = evaluate.load("accuracy")
 
@@ -27,33 +45,18 @@ def get_metrics_func():
     return compute_metrics
 
 
-def get_model_config_examples():
-    c1 = {
-        "feature_encoder": "wav2vec2",  # or "jukebox", "whisper", ...
-        "freeze_encoder": True,
-        "classifier": {"hidden_layers": [512], "dropout": 0.3, "heads": ["genre"]},
-    }
-
-    c2 = {
-        "feature_encoder": "wav2vec2",  # or "jukebox", "whisper", ...
-        "freeze_encoder": True,
-        "classifier": {"hidden_layers": [512, 512], "dropout": 0.5, "heads": ["genre"]},
-    }
-
-    return c1, c2
-
-
-def get_model(model_config, ds):
+def get_model(training_config, ds):
     class_feature = ds.features["label"]
     l2i, i2l = get_feature_label_mapping(class_feature)
+
     model = AutoModelForAudioClassification.from_pretrained(
-        FEATURE_ENCODER_TO_HF_HUB[model_config["feature_encoder"]],
+        FEATURE_ENCODER_TO_HF_HUB[training_config["feature_encoder"]],
         num_labels=class_feature.num_classes,
         label2id=l2i,
         id2label=i2l,
     )
 
-    if model_config["freeze_encoder"]:
+    if training_config["freeze_encoder"]:
         model.freeze_feature_encoder()
 
     return model
@@ -64,14 +67,15 @@ def get_trainer(
     model,
     train_ds,
     eval_ds,
+    training_config,
     feature_extractor=None,
     output_dir="out",
     debug=False,
     env=None,
 ):
-    epochs = 10
-    train_batch_size = 256
-    eval_batch_size = 512
+    epochs = training_config["epochs"]
+    train_batch_size = training_config["train_batch_size"]
+    eval_batch_size = training_config["eval_batch_size"]
 
     wandb.init(
         project=PROJECT_NAME,
@@ -109,7 +113,6 @@ def get_trainer(
     return trainer
 
 
-def run_trainer(run_name, trainer, models_dir_path):
-    trainer.train()
+def end_training(run_name, trainer, models_dir_path):
     wandb.finish()
     trainer.save_model(os.path.join(models_dir_path, run_name))

@@ -14,6 +14,7 @@ torchaudio = "<0.12.0"
 wandb = "*"
 librosa = "*"
 evaluate = "*"
+tqdm = "*"
 
 [dev-packages]
 ipykernel = "*"

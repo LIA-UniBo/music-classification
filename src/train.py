@@ -60,7 +60,14 @@ def get_model(model_config, ds):
 
 
 def get_trainer(
-    run_name, model, ds, feature_extractor=None, output_dir="out", debug=False, env=None
+    run_name,
+    model,
+    train_ds,
+    eval_ds,
+    feature_extractor=None,
+    output_dir="out",
+    debug=False,
+    env=None,
 ):
     epochs = 10
     train_batch_size = 256
@@ -93,8 +100,8 @@ def get_trainer(
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=ds["train"],
-        eval_dataset=ds["test"],
+        train_dataset=train_ds,
+        eval_dataset=eval_ds,
         tokenizer=feature_extractor,
         compute_metrics=get_metrics_func(),
     )

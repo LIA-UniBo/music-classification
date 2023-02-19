@@ -49,12 +49,22 @@ def unwrap_dataset(ds):
 
 
 def get_csv_name(config, csv_path):
-    path_pieces = [csv_path.split(".")[0]]
+    path_pieces = [csv_path.split(".")[0]] + _get_file_suffixes(config)
+    return "_".join(path_pieces) + ".csv"
+
+
+def get_ds_name(config, ds_path):
+    path_pieces = [ds_path] + _get_file_suffixes(config)
+    return "_".join(path_pieces)
+
+
+def _get_file_suffixes(config):
+    suffix = []
     for feature_name, feature_config in config.items():
         substr = (
             feature_name
             + (f"{feature_config['top_n']}" if feature_config["top_n"] else "")
-            + (f"s{feature_config['sample']}" if feature_config["sample"] else "")
+            + (f"s{feature_config['samples']}" if feature_config["samples"] else "")
         )
-        path_pieces.append(substr)
-    return "_".join(path_pieces) + ".csv"
+        suffix.append(substr)
+    return suffix

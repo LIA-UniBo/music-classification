@@ -2,8 +2,9 @@ import os
 
 import datasets
 from datasets import Audio, Dataset, Features
+from sklearn.model_selection import train_test_split
 
-from src.utils import unwrap_dataset, wrap_dataset
+from src.utils import get_ds_name, unwrap_dataset, wrap_dataset
 
 DATASET_FEATURES = [
     "genre",
@@ -85,14 +86,42 @@ def sample_df(df, target_feature, total_samples):
     return df_sampled
 
 
+def split_df(df, validation_size, test_size=None):
+    dfs = {}
+
+    if test_size is None:
+        test_size = 0
+
+    dfs["train"], temp_df = train_test_split(
+        df,
+        test_size=test_size + validation_size,
+    )
+
+    if test_size:
+        dfs["valid"], dfs["test"] = train_test_split(
+            temp_df,
+            test_size=test_size / (test_size + validation_size),
+        )
+    else:
+        dfs["valid"] = temp_df
+
+    return dfs
+
+
 def get_dataset(df):
     return Dataset.from_pandas(df.reset_index(drop=True))
 
 
 def prepare_ds(
-    ds: Dataset, df, target_features, test_split_size, fixed_mapping=None, save=False
+    ds: Dataset,
+    df,
+    feature_configs,
+    test_split_size,
+    fixed_mapping=None,
+    save=False,
+    original_path=None,
 ):
-    drop_features = [f for f in DATASET_FEATURES if f not in target_features]
+    drop_features = [f for f in DATASET_FEATURES if f not in feature_configs.keys()]
 
     # Filter dataset `ds` by IDS present in `df`
     id_to_index = {id_: i for i, id_ in enumerate(ds["id"])}
@@ -102,22 +131,19 @@ def prepare_ds(
 
     if fixed_mapping:
         raise NotImplementedError()
-        # Should force the way features are casted to ClassLabels
-    ds = _cast_features(ds, df, target_features=target_features)
+        # TODO: Should force the way features are casted to ClassLabels
+    ds = _cast_features(ds, df, target_features=feature_configs.keys())
 
-    if len(target_features) > 1:
+    if len(feature_configs) > 1:
+        # TODO
         raise NotImplementedError()
 
-    ds = ds.train_test_split(
-        test_size=test_split_size, stratify_by_column=target_features[0]
-    )
+    ds = ds.train_test_split(test_size=test_split_size)
 
-    ds = ds.rename_column(target_features[0], "label")
+    # TODO ds = ds.rename_column(target_features[0], "label")
     if save:
-        raise NotImplementedError()
-        ds.save_to_disk(
-            ds.filename + "-".join(target_features)
-        )  # TODO Also other hp? top_n, samples,
+        ds_path = get_ds_name(feature_configs, original_path)
+        ds.save_to_disk(ds_path)
     return ds
 
 

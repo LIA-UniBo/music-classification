@@ -1,8 +1,6 @@
 import IPython.display as ipd
 import numpy as np
 
-from src.dataset import get_label_mappings
-
 
 def convert_if_label(sample, feature, label_maps):
     value = sample[feature]
@@ -30,10 +28,10 @@ def play_audios(samples, label_maps, print_features=[]):
         )
 
 
-def play_random_audios(ds, quantity, print_features=[]):
+def play_random_audios(ds, label_maps, quantity, print_features=[]):
     play_audios(
         ds.select(np.random.randint(0, len(ds), quantity)),
-        get_label_mappings(ds),
+        label_maps,
         print_features=print_features,
     )
 

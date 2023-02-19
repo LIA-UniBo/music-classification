@@ -139,25 +139,27 @@ def add_audio_column(ds):
 def prepare_ds(
     ds: Dataset, df, target_features, test_split_size, fixed_mapping=None, save=False
 ):
+    drop_features = [f for f in DATASET_FEATURES if f not in target_features]
+
     # Filter dataset `ds` by IDS present in `df`
     id_to_index = {id_: i for i, id_ in enumerate(ds["id"])}
     indices_to_keep = [id_to_index[id_] for id_ in set(df["id"]) if id_ in id_to_index]
     ds = ds.select(indices_to_keep)
-    ds = ds.remove_columns(["audio", "audio_path", "category"])
+    ds = ds.remove_columns(["audio", "audio_path"] + drop_features)
 
     if fixed_mapping:
         raise NotImplementedError()
         # Should force the way features are casted to ClassLabels
     ds = cast_features(ds, df, target_features=target_features)
 
-    if len(target_features) > 0:
+    if len(target_features) > 1:
         raise NotImplementedError()
 
-    ds = ds.rename_column(target_features[0], "label")
     ds = ds.train_test_split(
         test_size=test_split_size, stratify_by_column=target_features[0]
     )
 
+    ds = ds.rename_column(target_features[0], "label")
     if save:
         raise NotImplementedError()
         ds.save_to_disk(

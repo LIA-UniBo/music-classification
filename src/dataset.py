@@ -193,7 +193,7 @@ def _get_features_dict(df, target_features):
     return {
         f: {
             "id": None,
-            "names": df[f].unique().tolist(),
+            "names": sorted(df[f].unique()),
             "_type": "ClassLabel",
         }
         for f in target_features

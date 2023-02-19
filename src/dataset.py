@@ -75,19 +75,6 @@ def filter_df(df, audios_dir_path, features_config, remove_nones=True):
     return df
 
 
-def get_dataset(df):
-    return Dataset.from_pandas(df.reset_index(drop=True))
-
-
-def get_label_mappings(ds):
-    label_maps = {}
-    for f in ds.features:
-        if type(ds.features[f]) == datasets.features.ClassLabel:
-            m = create_label_maps(ds.features[f])
-            label_maps[f] = {"l2i": m[0], "i2l": m[1]}
-    return label_maps
-
-
 def sample_df(df, target_feature, total_samples):
     samples_per_value = total_samples // len(df[target_feature].unique())
     df_sampled = df.groupby(target_feature, group_keys=False).apply(
@@ -98,37 +85,8 @@ def sample_df(df, target_feature, total_samples):
     return df_sampled
 
 
-def create_label_maps(feature):
-    label2id = {name: feature.str2int(name) for name in feature.names}
-    id2label = {v: k for k, v in label2id.items()}
-    return label2id, id2label
-
-
-def get_preprocess_func(feature_extractor):
-    def preprocess_function(examples):
-        audio_arrays = [x["array"] for x in examples["audio"]]
-        inputs = feature_extractor(
-            audio_arrays,
-            sampling_rate=feature_extractor.sampling_rate,
-            max_length=16000,
-            truncation=True,
-        )
-        return inputs
-
-    return preprocess_function
-
-
-def add_audio_column(ds):
-    ds = wrap_dataset(ds)
-    for split, ds_split in ds.items():
-        ds[split] = ds_split.add_column("audio", ds_split["audio_path"]).cast_column(
-            "audio",
-            Audio(
-                # sampling_rate=16_000 #TODO: Depends on the model
-            ),
-        )
-
-    return unwrap_dataset(ds)
+def get_dataset(df):
+    return Dataset.from_pandas(df.reset_index(drop=True))
 
 
 def prepare_ds(
@@ -145,7 +103,7 @@ def prepare_ds(
     if fixed_mapping:
         raise NotImplementedError()
         # Should force the way features are casted to ClassLabels
-    ds = cast_features(ds, df, target_features=target_features)
+    ds = _cast_features(ds, df, target_features=target_features)
 
     if len(target_features) > 1:
         raise NotImplementedError()
@@ -163,7 +121,49 @@ def prepare_ds(
     return ds
 
 
-def get_features_dict(df, target_features):
+def add_audio_column(ds):
+    ds = wrap_dataset(ds)
+    for split, ds_split in ds.items():
+        ds[split] = ds_split.add_column("audio", ds_split["audio_path"]).cast_column(
+            "audio",
+            Audio(
+                # sampling_rate=16_000 #TODO: Depends on the model
+            ),
+        )
+
+    return unwrap_dataset(ds)
+
+
+def get_feature_label_mapping(feature):
+    label2id = {name: feature.str2int(name) for name in feature.names}
+    id2label = {v: k for k, v in label2id.items()}
+    return label2id, id2label
+
+
+def get_dataset_label_mapping(ds):
+    label_maps = {}
+    for f in ds.features:
+        if type(ds.features[f]) == datasets.features.ClassLabel:
+            m = get_feature_label_mapping(ds.features[f])
+            label_maps[f] = {"l2i": m[0], "i2l": m[1]}
+    return label_maps
+
+
+def get_preprocess_func(feature_extractor):
+    def preprocess_function(examples):
+        audio_arrays = [x["array"] for x in examples["audio"]]
+        inputs = feature_extractor(
+            audio_arrays,
+            sampling_rate=feature_extractor.sampling_rate,
+            max_length=16000,
+            truncation=True,
+        )
+        return inputs
+
+    return preprocess_function
+
+
+def _get_features_dict(df, target_features):
     return {
         f: {
             "id": None,
@@ -174,8 +174,8 @@ def get_features_dict(df, target_features):
     }
 
 
-def cast_features(ds, df, target_features):
-    features = Features.from_dict(get_features_dict(df, target_features))
+def _cast_features(ds, df, target_features):
+    features = Features.from_dict(_get_features_dict(df, target_features))
     for f, args in features.items():
         ds = ds.cast_column(f, args)
     return ds

@@ -34,14 +34,12 @@ DATASET_FEATURES = [
 ]
 
 
-def filter_df(
-    df, audios_dir_path, keep_features=None, remove_nones=True, top_n=None, samples=None
-):
+def filter_df(df, audios_dir_path, features_config, remove_nones=True):
     print(f"{len(df)} total samples in dataset")
 
     drop_features = []
-    if keep_features:
-        drop_features = [f for f in DATASET_FEATURES if f not in keep_features]
+    if len(features_config) > 0:
+        drop_features = [f for f in DATASET_FEATURES if f not in features_config.keys()]
         print(f"{len(DATASET_FEATURES) - len(drop_features)} features considered")
 
     # Using .mp3 files paths, base directory is prepended
@@ -61,21 +59,17 @@ def filter_df(
             f"Considering only rows without non-available values, {df_nas.sum()} samples discarded"
         )
 
-    if top_n:
-        if len(top_n) > 1:
-            # What should happen?
-            raise NotImplementedError()
+    for f_name, f_conf in features_config.items():
+        top_n = f_conf["top_n"] if "top_n" in f_conf else None
+        if top_n:
+            df = df[df[f_name].isin(df.value_counts(f_name, sort=True)[:top_n].index)]
+            print(f"Keeping only the {top_n} most frequent values of {f_name}")
 
-        for f, n in top_n.items():
-            df = df[df[f].isin(df.value_counts(f, sort=True)[:n].index)]
-            print(f"Keeping only the {n} most frequent values of {f}")
-
-    if samples:
-        if len(keep_features) > 1:
-            # What should happen?
-            raise NotImplementedError()
-        df = sample_df(df, keep_features[0], total_samples=samples)
-        print("Applying stratified sampling to the database")
+    for f_name, f_conf in features_config.items():
+        samples = f_conf["samples"] if "samples" in f_conf else None
+        if samples:
+            df = sample_df(df, f_name, total_samples=samples)
+            print("Applying stratified sampling to the database")
 
     print(f"{len(df)} total samples left")
     return df

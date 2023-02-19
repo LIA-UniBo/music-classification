@@ -46,3 +46,15 @@ def unwrap_dataset(ds):
     if len(ds) == 1 and "_" in ds.keys():
         ds = ds["_"]
     return ds
+
+
+def get_csv_name(config, csv_path):
+    path_pieces = [csv_path.split(".")[0]]
+    for feature_name, feature_config in config.items():
+        substr = (
+            feature_name
+            + (f"{feature_config['top_n']}" if feature_config["top_n"] else "")
+            + (f"s{feature_config['sample']}" if feature_config["sample"] else "")
+        )
+        path_pieces.append(substr)
+    return "_".join(path_pieces) + ".csv"

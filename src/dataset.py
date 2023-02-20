@@ -142,7 +142,9 @@ def prepare_ds(
     id_to_index = {id_: i for i, id_ in enumerate(ds["id"])}
     indices_to_keep = [id_to_index[id_] for id_ in set(df["id"]) if id_ in id_to_index]
     ds = ds.select(indices_to_keep)
-    ds = ds.remove_columns(["audio", "path"] + drop_features)
+    ds = ds.remove_columns(
+        ["audio", "path"] + [f for f in drop_features if f in ds.features]
+    )
 
     if fixed_mapping:
         raise NotImplementedError()
@@ -162,14 +164,20 @@ def prepare_ds(
     return ds
 
 
-def add_audio_column(ds, training_config, audios_dir_path):
+def add_audio_column(ds, audios_dir_path, training_config=None):
     ds = wrap_dataset(ds)
     for split, ds_split in ds.items():
         ds[split] = ds_split.add_column(
             "audio", [os.path.join(audios_dir_path, path) for path in ds_split["path"]]
         ).cast_column(
             "audio",
-            Audio(sampling_rate=get_feature_extractor(training_config).sampling_rate),
+            Audio(
+                sampling_rate=(
+                    get_feature_extractor(training_config).sampling_rate
+                    if training_config
+                    else None
+                )
+            ),
         )
 
     return unwrap_dataset(ds)

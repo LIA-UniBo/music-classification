@@ -1,5 +1,7 @@
 import IPython.display as ipd
 import numpy as np
+from datasets import Audio
+from scipy.io.wavfile import write
 
 
 def convert_if_label(sample, feature, label_maps):
@@ -68,3 +70,8 @@ def _get_file_suffixes(config):
         )
         suffix.append(substr)
     return suffix
+
+
+def debug_sample_to_wav(audio: Audio, filename: str):
+    data = np.array(audio["array"]).astype(np.int16)
+    write(filename, audio["sampling_rate"], data)

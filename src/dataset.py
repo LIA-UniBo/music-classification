@@ -147,14 +147,12 @@ def prepare_ds(
     return ds
 
 
-def add_audio_column(ds):
+def add_audio_column(ds, sampling_rate):
     ds = wrap_dataset(ds)
     for split, ds_split in ds.items():
         ds[split] = ds_split.add_column("audio", ds_split["audio_path"]).cast_column(
             "audio",
-            Audio(
-                # sampling_rate=16_000 #TODO: Depends on the model
-            ),
+            Audio(sampling_rate=sampling_rate),
         )
 
     return unwrap_dataset(ds)
@@ -173,7 +171,6 @@ def get_dataset_label_mapping(ds):
             m = get_feature_label_mapping(ds.features[f])
             label_maps[f] = {"l2i": m[0], "i2l": m[1]}
     return label_maps
-
 
 
 def _get_features_dict(df, target_features):

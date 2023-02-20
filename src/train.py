@@ -23,10 +23,16 @@ def get_preprocess_func(training_config):
     )
 
     def preprocess_function(examples):
-        audio_arrays = [x["array"] for x in examples["audio"]]
+        audio_arrays = [example["array"] for example in examples["audio"]]
+        audio_sampling_rates = [
+            example["sampling_rate"] for example in examples["audio"]
+        ]
+        sampling_rate = (
+            audio_sampling_rates[0] if len(set(audio_sampling_rates)) == 1 else None
+        )
         inputs = feature_extractor(
             audio_arrays,
-            sampling_rate=feature_extractor.sampling_rate,
+            sampling_rate=sampling_rate,
             max_length=16000,
             truncation=True,
         )

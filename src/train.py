@@ -12,6 +12,9 @@ from src.dataset import (
 )
 
 PROJECT_NAME = "music-classification-aii"
+MAX_AUDIO_LEN_S = (
+    10  # TODO: Transformers are O(n^2) so high audio len could be prohibitive
+)
 
 
 def get_preprocess_func(training_config):
@@ -25,10 +28,11 @@ def get_preprocess_func(training_config):
         sampling_rate = (
             audio_sampling_rates[0] if len(set(audio_sampling_rates)) == 1 else None
         )
+        # TODO: Add dynamic padding with DataCollator
         inputs = feature_extractor(
             audio_arrays,
             sampling_rate=sampling_rate,
-            max_length=16000,
+            max_length=sampling_rate * MAX_AUDIO_LEN_S * 1000,
             truncation=True,
         )
         return inputs

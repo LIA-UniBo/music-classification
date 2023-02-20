@@ -65,7 +65,7 @@ def filter_df(df, audios_dir_path, features_config, remove_nones=True):
     df["full_path"] = df["path"].apply(lambda x: os.path.join(audios_dir_path, x))
     # Using the filepath as ID for each sample
     df["id"] = df["path"].apply(
-        lambda x: "_".join(x.split(".")[:-1].replace("/", " ").split(" "))
+        lambda x: "_".join(".".join(x.split(".")[:-1]).replace("/", " ").split(" "))
     )
     df = df.drop(columns=["path"] + drop_features)
 

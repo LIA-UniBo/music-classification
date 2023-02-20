@@ -3,6 +3,7 @@ import os
 import datasets
 from datasets import Audio, Dataset, Features
 from sklearn.model_selection import train_test_split
+from transformers import AutoFeatureExtractor
 
 from src.utils import get_ds_name, unwrap_dataset, wrap_dataset
 
@@ -33,6 +34,22 @@ DATASET_FEATURES = [
     "Cheerful",
     "Dark",
 ]
+
+FEATURE_ENCODER_TO_HF_HUB = {"wav2vec2": "facebook/wav2vec2-base"}
+
+
+_feature_extractor = None
+
+
+def get_feature_extractor(training_config):
+    global _feature_extractor
+
+    if not _feature_extractor:
+        _feature_extractor = AutoFeatureExtractor.from_pretrained(
+            FEATURE_ENCODER_TO_HF_HUB[training_config["feature_encoder"]]
+        )
+
+    return _feature_extractor
 
 
 def filter_df(df, audios_dir_path, features_config, remove_nones=True):
@@ -147,12 +164,12 @@ def prepare_ds(
     return ds
 
 
-def add_audio_column(ds, sampling_rate):
+def add_audio_column(ds, training_config):
     ds = wrap_dataset(ds)
     for split, ds_split in ds.items():
         ds[split] = ds_split.add_column("audio", ds_split["audio_path"]).cast_column(
             "audio",
-            Audio(sampling_rate=sampling_rate),
+            Audio(sampling_rate=get_feature_extractor(training_config).sampling_rate),
         )
 
     return unwrap_dataset(ds)

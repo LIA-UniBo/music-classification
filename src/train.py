@@ -3,31 +3,15 @@ import os
 import evaluate
 import numpy as np
 import wandb
-from transformers import (
-    AutoFeatureExtractor,
-    AutoModelForAudioClassification,
-    Trainer,
-    TrainingArguments,
+from transformers import AutoModelForAudioClassification, Trainer, TrainingArguments
+
+from src.dataset import (
+    FEATURE_ENCODER_TO_HF_HUB,
+    get_feature_extractor,
+    get_feature_label_mapping,
 )
 
-from src.dataset import get_feature_label_mapping
-
 PROJECT_NAME = "music-classification-aii"
-
-FEATURE_ENCODER_TO_HF_HUB = {"wav2vec2": "facebook/wav2vec2-base"}
-
-_feature_extractor = None
-
-
-def get_feature_extractor(training_config):
-    global _feature_extractor
-
-    if not _feature_extractor:
-        _feature_extractor = AutoFeatureExtractor.from_pretrained(
-            FEATURE_ENCODER_TO_HF_HUB[training_config["feature_encoder"]]
-        )
-
-    return _feature_extractor
 
 
 def get_preprocess_func(training_config):

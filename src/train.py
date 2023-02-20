@@ -88,7 +88,7 @@ def get_preprocess_func(training_config, max_audio_len_s=DEFAULT_MAX_AUDIO_LEN_S
         inputs = feature_extractor(
             audio_arrays,
             sampling_rate=sampling_rate,
-            max_length=int(sampling_rate * max_audio_len_s * 1000),
+            max_length=int(sampling_rate * max_audio_len_s),
             truncation=True,
         )
         return inputs

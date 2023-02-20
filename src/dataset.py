@@ -35,7 +35,10 @@ DATASET_FEATURES = [
     "Dark",
 ]
 
-FEATURE_ENCODER_TO_HF_HUB = {"wav2vec2": "facebook/wav2vec2-base"}
+FEATURE_ENCODER_TO_HF_HUB = {
+    "wav2vec2": "facebook/wav2vec2-base",
+    "whisper": "openai/whisper-tiny",
+}
 
 
 _feature_extractor = None

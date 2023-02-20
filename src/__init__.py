@@ -1,8 +1,8 @@
-from transformers import AutoModelForSequenceClassification
+from transformers import AutoModelForAudioClassification
 from transformers.models.whisper import WhisperConfig
 
 from src.model import WhisperForSequenceClassification
 
-AutoModelForSequenceClassification.register(
+AutoModelForAudioClassification.register(
     WhisperConfig, WhisperForSequenceClassification
 )

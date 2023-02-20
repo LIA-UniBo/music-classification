@@ -4,6 +4,10 @@ import torch
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss
 from transformers.modeling_outputs import SequenceClassifierOutput
+from transformers.models.wav2vec2.modeling_wav2vec2 import (
+    Wav2Vec2Config,
+    Wav2Vec2ForSequenceClassification,
+)
 from transformers.models.whisper.modeling_whisper import (
     WhisperConfig,
     WhisperEncoder,
@@ -15,8 +19,8 @@ class WhisperMLPHead(nn.Module):
     def __init__(self, config: WhisperConfig):
         super().__init__()
 
-        layer_norm_eps = 1e-5  # TODO config.layer_norm_eps
-        hidden_size = 512  # TODO config.hidden_size
+        layer_norm_eps = config.layer_norm_eps
+        hidden_size = config.hidden_size
         self.layernorm = nn.LayerNorm(hidden_size, eps=layer_norm_eps)
         self.dense = nn.Linear(hidden_size, config.num_labels)
 
@@ -33,7 +37,10 @@ class WhisperForSequenceClassification(WhisperPreTrainedModel):
         self.encoder = WhisperEncoder(config)
 
         # Classifier head
-        self.classifier = WhisperMLPHead(config)
+        config.layer_norm_eps = 1e-5  # TODO config.layer_norm_eps
+        config.hidden_size = 512  # TODO config.hidden_size
+        self.head = WhisperMLPHead(config)
+        self.classifier = nn.Linear(config.hidden_size, config.num_labels)
 
         # Initialize weights and apply final processing
         self.post_init()

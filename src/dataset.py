@@ -67,7 +67,7 @@ def filter_df(df, audios_dir_path, features_config, remove_nones=True):
     df["id"] = df["path"].apply(
         lambda x: "_".join(".".join(x.split(".")[:-1]).replace("/", " ").split(" "))
     )
-    df = df.drop(columns=["path"] + drop_features)
+    df = df.drop(columns=drop_features)
 
     if remove_nones:
         df_nas = df.isna().any(axis=1)

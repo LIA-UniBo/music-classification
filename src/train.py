@@ -3,7 +3,12 @@ import os
 import evaluate
 import numpy as np
 import wandb
-from transformers import AutoModelForAudioClassification, Trainer, TrainingArguments
+from transformers import (
+    AutoModelForAudioClassification,
+    DataCollatorWithPadding,
+    Trainer,
+    TrainingArguments,
+)
 
 from src.dataset import (
     FEATURE_ENCODER_TO_HF_HUB,
@@ -88,6 +93,8 @@ def get_trainer(
         tags=([env] if env else []) + (["debug"] if debug else []),
     )
 
+    data_collator = DataCollatorWithPadding()
+
     training_args = TrainingArguments(
         run_name=run_name,
         output_dir=output_dir,
@@ -112,6 +119,7 @@ def get_trainer(
         train_dataset=train_ds,
         eval_dataset=eval_ds,
         tokenizer=feature_extractor,
+        data_collator=data_collator,
         compute_metrics=get_metrics_func(),
     )
 

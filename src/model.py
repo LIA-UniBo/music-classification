@@ -54,7 +54,7 @@ class WhisperForSequenceClassification(WhisperPreTrainedModel):
 
     def forward(
         self,
-        input_values: Optional[torch.Tensor],
+        input_features: Optional[torch.Tensor],
         attention_mask: Optional[torch.Tensor] = None,
         head_mask: Optional[torch.Tensor] = None,
         output_attentions: Optional[bool] = None,
@@ -67,7 +67,7 @@ class WhisperForSequenceClassification(WhisperPreTrainedModel):
         )
 
         outputs = self.encoder(
-            input_values,
+            input_features,
             head_mask=head_mask,
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,

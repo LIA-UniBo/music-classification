@@ -61,12 +61,11 @@ def filter_df(df, audios_dir_path, features_config, remove_nones=True):
         print(f"{len(DATASET_FEATURES) - len(drop_features)} features considered")
 
     # Using .mp3 files paths, base directory is prepended
-    df["audio_path"] = df["path"].apply(
-        lambda x: os.path.join(audios_dir_path, x.replace(".caf", ".mp3"))
-    )
+    df["path"] = df["path"].apply(lambda x: x.replace(".caf", ".mp3"))
+    df["full_path"] = df["path"].apply(lambda x: os.path.join(audios_dir_path, x))
     # Using the filepath as ID for each sample
     df["id"] = df["path"].apply(
-        lambda x: "".join(x.split(".")[:-1]).replace("/", "_").replace(" ", "_")
+        lambda x: "_".join(x.split(".")[:-1].replace("/", " ").split(" "))
     )
     df = df.drop(columns=["path"] + drop_features)
 
@@ -126,7 +125,7 @@ def split_df(df, validation_size, test_size=None):
 
 
 def get_dataset(df):
-    return Dataset.from_pandas(df.reset_index(drop=True))
+    return Dataset.from_pandas(df.drop(columns=["full_path"]).reset_index(drop=True))
 
 
 def prepare_ds(
@@ -144,7 +143,7 @@ def prepare_ds(
     id_to_index = {id_: i for i, id_ in enumerate(ds["id"])}
     indices_to_keep = [id_to_index[id_] for id_ in set(df["id"]) if id_ in id_to_index]
     ds = ds.select(indices_to_keep)
-    ds = ds.remove_columns(["audio", "audio_path"] + drop_features)
+    ds = ds.remove_columns(["audio", "path", "full_path"] + drop_features)
 
     if fixed_mapping:
         raise NotImplementedError()
@@ -164,10 +163,12 @@ def prepare_ds(
     return ds
 
 
-def add_audio_column(ds, training_config):
+def add_audio_column(ds, training_config, audios_dir_path):
     ds = wrap_dataset(ds)
     for split, ds_split in ds.items():
-        ds[split] = ds_split.add_column("audio", ds_split["audio_path"]).cast_column(
+        ds[split] = ds_split.add_column(
+            "audio", [audios_dir_path + path for path in ds_split["path"]]
+        ).cast_column(
             "audio",
             Audio(sampling_rate=get_feature_extractor(training_config).sampling_rate),
         )

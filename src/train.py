@@ -16,11 +16,22 @@ PROJECT_NAME = "music-classification-aii"
 
 FEATURE_ENCODER_TO_HF_HUB = {"wav2vec2": "facebook/wav2vec2-base"}
 
+_feature_extractor = None
+
+
+def get_feature_extractor(training_config):
+    global _feature_extractor
+
+    if not _feature_extractor:
+        _feature_extractor = AutoFeatureExtractor.from_pretrained(
+            FEATURE_ENCODER_TO_HF_HUB[training_config["feature_encoder"]]
+        )
+
+    return _feature_extractor
+
 
 def get_preprocess_func(training_config):
-    feature_extractor = AutoFeatureExtractor.from_pretrained(
-        FEATURE_ENCODER_TO_HF_HUB[training_config["feature_encoder"]]
-    )
+    feature_extractor = get_feature_extractor(training_config)
 
     def preprocess_function(examples):
         audio_arrays = [example["array"] for example in examples["audio"]]

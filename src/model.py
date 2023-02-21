@@ -3,17 +3,12 @@ from typing import Optional, Tuple, Union
 import torch
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss
+from transformers import WhisperFeatureExtractor
 from transformers.modeling_outputs import SequenceClassifierOutput
 from transformers.models.wav2vec2.modeling_wav2vec2 import (
-    Wav2Vec2Config,
-    Wav2Vec2ForSequenceClassification,
-    Wav2Vec2Model,
-)
+    Wav2Vec2Config, Wav2Vec2ForSequenceClassification, Wav2Vec2Model)
 from transformers.models.whisper.modeling_whisper import (
-    WhisperConfig,
-    WhisperEncoder,
-    WhisperPreTrainedModel,
-)
+    WhisperConfig, WhisperEncoder, WhisperPreTrainedModel)
 
 
 class ClassifierMLPHead(nn.Module):

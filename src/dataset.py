@@ -40,18 +40,20 @@ FEATURE_ENCODER_TO_HF_HUB = {
 }
 
 
-_feature_extractor = None
+_feature_extractors = {}
 
 
 def get_feature_extractor(training_config):
-    global _feature_extractor
+    global _feature_extractors
 
-    if not _feature_extractor:
-        _feature_extractor = AutoFeatureExtractor.from_pretrained(
+    if training_config["feature_encoder"] not in _feature_extractors:
+        _feature_extractors[
+            training_config["feature_encoder"]
+        ] = AutoFeatureExtractor.from_pretrained(
             FEATURE_ENCODER_TO_HF_HUB[training_config["feature_encoder"]]
         )
 
-    return _feature_extractor
+    return _feature_extractors[training_config["feature_encoder"]]
 
 
 def filter_df(df, features_config, remove_nones=True):

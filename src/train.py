@@ -3,19 +3,24 @@ import os
 import evaluate
 import numpy as np
 import wandb
-from transformers import (AutoConfig, AutoModelForAudioClassification,
-                          DataCollatorWithPadding, Trainer, TrainingArguments)
+from transformers import (
+    AutoConfig,
+    AutoModelForAudioClassification,
+    DataCollatorWithPadding,
+    Trainer,
+    TrainingArguments,
+)
 
 from src.dataset import FEATURE_ENCODER_TO_HF_HUB, get_feature_extractor
 from src.utils import get_feature_label_mapping
 
 PROJECT_NAME = "music-classification-aii"
-DEFAULT_MAX_AUDIO_LEN_S = (
-    10  # TODO: Transformers are O(n^2) so high audio len could be prohibitive
+DEFAULT_MAX_AUDIO_LEN_MS = (
+    10_000  # TODO: Transformers are O(n^2) so high audio len could be prohibitive
 )
 
 
-def get_preprocess_func(training_config, max_audio_len_s=DEFAULT_MAX_AUDIO_LEN_S):
+def get_preprocess_func(training_config, max_audio_len_ms=DEFAULT_MAX_AUDIO_LEN_MS):
     feature_extractor = get_feature_extractor(training_config)
 
     def preprocess_function(examples):
@@ -29,7 +34,7 @@ def get_preprocess_func(training_config, max_audio_len_s=DEFAULT_MAX_AUDIO_LEN_S
         inputs = feature_extractor(
             audio_arrays,
             sampling_rate=sampling_rate,
-            max_length=int(sampling_rate * max_audio_len_s),
+            max_length=int(sampling_rate * max_audio_len_ms / 1000),
             truncation=True,
         )
         return inputs

@@ -5,28 +5,30 @@ import torch.nn as nn
 from torch.nn import CrossEntropyLoss
 from transformers.modeling_outputs import SequenceClassifierOutput
 from transformers.models.wav2vec2.modeling_wav2vec2 import (
-    Wav2Vec2Config,
-    Wav2Vec2ForSequenceClassification,
-)
+    Wav2Vec2Config, Wav2Vec2ForSequenceClassification)
 from transformers.models.whisper.modeling_whisper import (
-    WhisperConfig,
-    WhisperEncoder,
-    WhisperPreTrainedModel,
-)
+    WhisperConfig, WhisperEncoder, WhisperPreTrainedModel)
 
 
-class WhisperMLPHead(nn.Module):
+class ClassifierMLPHead(nn.Module):
     def __init__(self, config: WhisperConfig):
         super().__init__()
 
-        layer_norm_eps = config.layer_norm_eps
         hidden_size = config.hidden_size
-        self.layernorm = nn.LayerNorm(hidden_size, eps=layer_norm_eps)
         self.dense = nn.Linear(hidden_size, config.num_labels)
+        self.layers = nn.ModuleList(
+            [
+                nn.Linear(config.hidden_layers[idx], config.hidden_layers[idx + 1])
+                for idx in range(len(config.hidden_layers))
+            ]
+        )
+        self.dropout = nn.Dropout(config.)
+        
 
     def forward(self, hidden_state):
-        hidden_state = self.layernorm(hidden_state)
-        hidden_state = self.dense(hidden_state)
+        for layer in self.classifier_dopout:
+            hidden_state = layer(hidden_state)
+            hidden_state = self.dense(hidden_state)
         return hidden_state
 
 
@@ -37,10 +39,10 @@ class WhisperForSequenceClassification(WhisperPreTrainedModel):
         self.encoder = WhisperEncoder(config)
 
         # Classifier head
-        config.layer_norm_eps = 1e-5  # TODO config.layer_norm_eps
-        config.hidden_size = 348  # TODO config.hidden_size
-        self.head = WhisperMLPHead(config)
-        self.classifier = nn.Linear(config.hidden_size, config.num_labels)
+        config.classifier_hidden_layers = [512, 512, 348]  # TODO
+        config.classifier_dropout = 0.2  # TODO
+        self.head = ClassifierMLPHead(config)
+        self.classifier = nn.Linear(config.classifier_hidden_layers[-1], config.num_labels)
 
         # Initialize weights and apply final processing
         self.post_init()

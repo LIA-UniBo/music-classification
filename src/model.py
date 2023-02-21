@@ -5,25 +5,29 @@ import torch.nn as nn
 from torch.nn import CrossEntropyLoss
 from transformers.modeling_outputs import SequenceClassifierOutput
 from transformers.models.wav2vec2.modeling_wav2vec2 import (
-    Wav2Vec2Config, Wav2Vec2ForSequenceClassification)
+    Wav2Vec2Config,
+    Wav2Vec2ForSequenceClassification,
+    Wav2Vec2Model,
+)
 from transformers.models.whisper.modeling_whisper import (
-    WhisperConfig, WhisperEncoder, WhisperPreTrainedModel)
+    WhisperConfig,
+    WhisperEncoder,
+    WhisperPreTrainedModel,
+)
 
 
 class ClassifierMLPHead(nn.Module):
-    def __init__(self, config: WhisperConfig):
+    def __init__(self, embedding_size, hidden_layers, dropout):
         super().__init__()
 
-        hidden_size = config.hidden_size
-        self.dense = nn.Linear(hidden_size, config.num_labels)
+        hidden_layers = [embedding_size] + hidden_layers
         self.layers = nn.ModuleList(
             [
-                nn.Linear(config.hidden_layers[idx], config.hidden_layers[idx + 1])
-                for idx in range(len(config.hidden_layers))
+                nn.Linear(hidden_layers[idx], hidden_layers[idx + 1])
+                for idx in range(len(hidden_layers) - 1)
             ]
         )
-        self.dropout = nn.Dropout(config.)
-        
+        self.dropout = nn.Dropout(dropout)
 
     def forward(self, hidden_state):
         for layer in self.classifier_dopout:
@@ -39,10 +43,14 @@ class WhisperForSequenceClassification(WhisperPreTrainedModel):
         self.encoder = WhisperEncoder(config)
 
         # Classifier head
-        config.classifier_hidden_layers = [512, 512, 348]  # TODO
-        config.classifier_dropout = 0.2  # TODO
-        self.head = ClassifierMLPHead(config)
-        self.classifier = nn.Linear(config.classifier_hidden_layers[-1], config.num_labels)
+        self.head = ClassifierMLPHead(
+            embedding_size=0,  # TODO
+            hidden_layers=config.classifier_hidden_layers,
+            droupout=config.classifier_droupout,
+        )
+        self.classifier = nn.Linear(
+            config.classifier_hidden_layers[-1], config.num_labels
+        )
 
         # Initialize weights and apply final processing
         self.post_init()
@@ -75,8 +83,77 @@ class WhisperForSequenceClassification(WhisperPreTrainedModel):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
         )
+        # TODO: Transpose?
 
         hidden_states = outputs[0]
+        hidden_states = self.head(hidden_states)
+        pooled_output = hidden_states.mean(dim=1)
+        logits = self.classifier(pooled_output)
+
+        loss = None
+        if labels is not None:
+            loss_fct = CrossEntropyLoss()
+            loss = loss_fct(logits.view(-1, self.config.num_labels), labels.view(-1))
+
+        if not return_dict:
+            output = (logits,) + outputs[2:]
+            return ((loss,) + output) if loss is not None else output
+
+        return SequenceClassifierOutput(
+            loss=loss,
+            logits=logits,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions,
+        )
+
+
+class Wav2Vec2ForSequenceMultiClassification(Wav2Vec2ForSequenceClassification):
+    def __init__(self, config):
+        super().__init__(config)
+
+        self.wav2vec2 = Wav2Vec2Model(config)
+        self.head = ClassifierMLPHead(
+            embedding_size=config.hidden_size,
+            hidden_layers=config.classifier_hidden_layers,
+            droupout=config.classifier_droupout,
+        )
+        self.classifier = nn.Linear(
+            config.classifier_hidden_layers[-1], config.num_labels
+        )
+
+        # Initialize weights and apply final processing
+        self.post_init()
+
+    def freeze_feature_encoder(self):
+        self.wav2vec2.feature_extractor._freeze_parameters()
+
+    def freeze_base_model(self):
+        for param in self.wav2vec2.parameters():
+            param.requires_grad = False
+
+    def forward(
+        self,
+        input_values: Optional[torch.Tensor],
+        attention_mask: Optional[torch.Tensor] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
+        labels: Optional[torch.Tensor] = None,
+    ) -> Union[Tuple, SequenceClassifierOutput]:
+        return_dict = (
+            return_dict if return_dict is not None else self.config.use_return_dict
+        )
+
+        outputs = self.wav2vec2(
+            input_values,
+            attention_mask=attention_mask,
+            output_attentions=output_attentions,
+            output_hidden_states=output_hidden_states,
+            return_dict=return_dict,
+        )
+
+        hidden_states = outputs[0]
+        hidden_states = self.head(hidden_states)
         pooled_output = hidden_states.mean(dim=1)
         logits = self.classifier(pooled_output)
 

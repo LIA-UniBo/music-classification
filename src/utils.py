@@ -15,7 +15,7 @@ def convert_if_label(sample, feature, label_maps):
         return value
 
 
-def play_audios(samples, label_maps, print_features=[]):
+def play_audios(samples, label_maps=None, print_features=[]):
     for sample in samples:
         descr = []
         for f in print_features:
@@ -30,7 +30,7 @@ def play_audios(samples, label_maps, print_features=[]):
         )
 
 
-def play_random_audios(ds, label_maps, quantity, print_features=[]):
+def play_random_audios(ds, quantity, label_maps=None, print_features=[]):
     play_audios(
         ds.select(np.random.randint(0, len(ds), quantity)),
         label_maps,

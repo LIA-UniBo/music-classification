@@ -63,7 +63,7 @@ def filter_df(df, features_config, remove_nones=True):
         drop_features = [f for f in DATASET_FEATURES if f not in features_config.keys()]
         print(f"{len(DATASET_FEATURES) - len(drop_features)} features considered")
 
-    # Using .mp3 files paths, base directory is prepended
+    # Using .mp3 files paths
     df["path"] = df["path"].apply(lambda x: x.replace(".caf", ".mp3"))
     # Using the filepath as ID for each sample
     df["id"] = df["path"].apply(
@@ -167,20 +167,17 @@ def prepare_ds(
     return ds
 
 
-def add_audio_column(ds, audios_dir_path, training_config=None):
+def add_audio_column(ds, audios_dir_path, sampling_rate=None, training_config=None):
+    if training_config and not sampling_rate:
+        sampling_rate = get_feature_extractor(training_config).sampling_rate
+
     ds = wrap_dataset(ds)
     for split, ds_split in ds.items():
         ds[split] = ds_split.add_column(
             "audio", [os.path.join(audios_dir_path, path) for path in ds_split["path"]]
         ).cast_column(
             "audio",
-            Audio(
-                sampling_rate=(
-                    get_feature_extractor(training_config).sampling_rate
-                    if training_config
-                    else None
-                )
-            ),
+            Audio(sampling_rate=sampling_rate),
         )
 
     return unwrap_dataset(ds)

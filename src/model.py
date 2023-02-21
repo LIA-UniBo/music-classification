@@ -38,7 +38,7 @@ class WhisperForSequenceClassification(WhisperPreTrainedModel):
 
         # Classifier head
         config.layer_norm_eps = 1e-5  # TODO config.layer_norm_eps
-        config.hidden_size = 512  # TODO config.hidden_size
+        config.hidden_size = 348  # TODO config.hidden_size
         self.head = WhisperMLPHead(config)
         self.classifier = nn.Linear(config.hidden_size, config.num_labels)
 

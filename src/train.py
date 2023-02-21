@@ -84,7 +84,6 @@ def get_preprocess_func(training_config, max_audio_len_s=DEFAULT_MAX_AUDIO_LEN_S
         sampling_rate = (
             audio_sampling_rates[0] if len(set(audio_sampling_rates)) == 1 else None
         )
-        # TODO: Add dynamic padding with DataCollator
         inputs = feature_extractor(
             audio_arrays,
             sampling_rate=sampling_rate,

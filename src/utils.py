@@ -1,6 +1,6 @@
+import datasets
 import IPython.display as ipd
 import numpy as np
-from datasets import Audio
 from scipy.io.wavfile import write
 
 
@@ -30,10 +30,10 @@ def play_audios(samples, label_maps=None, print_features=[]):
         )
 
 
-def play_random_audios(ds, quantity, label_maps=None, print_features=[]):
+def play_random_audios(ds, quantity, print_features=[]):
     play_audios(
         ds.select(np.random.randint(0, len(ds), quantity)),
-        label_maps,
+        get_dataset_label_mapping(ds),
         print_features=print_features,
     )
 
@@ -48,6 +48,21 @@ def unwrap_dataset(ds):
     if len(ds) == 1 and "_" in ds.keys():
         ds = ds["_"]
     return ds
+
+
+def get_feature_label_mapping(feature):
+    label2id = {name: feature.str2int(name) for name in feature.names}
+    id2label = {v: k for k, v in label2id.items()}
+    return label2id, id2label
+
+
+def get_dataset_label_mapping(ds):
+    label_maps = {}
+    for f in ds.features:
+        if type(ds.features[f]) == datasets.features.ClassLabel:
+            m = get_feature_label_mapping(ds.features[f])
+            label_maps[f] = {"l2i": m[0], "i2l": m[1]}
+    return label_maps
 
 
 def get_csv_name(config, csv_path):
@@ -72,6 +87,6 @@ def _get_file_suffixes(config):
     return suffix
 
 
-def debug_sample_to_wav(audio: Audio, filename: str):
+def debug_sample_to_wav(audio: datasets.Audio, filename: str):
     data = np.array(audio["array"]).astype(np.int16)
     write(filename, audio["sampling_rate"], data)

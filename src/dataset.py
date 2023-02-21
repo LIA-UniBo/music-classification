@@ -1,6 +1,5 @@
 import os
 
-import datasets
 from datasets import Audio, Dataset, Features
 from sklearn.model_selection import train_test_split
 from transformers import AutoFeatureExtractor
@@ -181,21 +180,6 @@ def add_audio_column(ds, audios_dir_path, sampling_rate=None, training_config=No
         )
 
     return unwrap_dataset(ds)
-
-
-def get_feature_label_mapping(feature):
-    label2id = {name: feature.str2int(name) for name in feature.names}
-    id2label = {v: k for k, v in label2id.items()}
-    return label2id, id2label
-
-
-def get_dataset_label_mapping(ds):
-    label_maps = {}
-    for f in ds.features:
-        if type(ds.features[f]) == datasets.features.ClassLabel:
-            m = get_feature_label_mapping(ds.features[f])
-            label_maps[f] = {"l2i": m[0], "i2l": m[1]}
-    return label_maps
 
 
 def _get_features_dict(df, target_features):

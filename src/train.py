@@ -6,8 +6,8 @@ import wandb
 from transformers import (AutoConfig, AutoModelForAudioClassification,
                           DataCollatorWithPadding, Trainer, TrainingArguments)
 
-from src.dataset import (FEATURE_ENCODER_TO_HF_HUB, get_feature_extractor,
-                         get_feature_label_mapping)
+from src.dataset import FEATURE_ENCODER_TO_HF_HUB, get_feature_extractor
+from src.utils import get_feature_label_mapping
 
 PROJECT_NAME = "music-classification-aii"
 DEFAULT_MAX_AUDIO_LEN_S = (
@@ -55,12 +55,12 @@ def get_model(training_config, ds):
         FEATURE_ENCODER_TO_HF_HUB[training_config["feature_encoder"]]
     )
 
-    model.config.classifier_hidden_states = training_config["classifier"]["layers"]
-    model.config.classifier_dropout = training_config["classifier"]["dropout"]
-    
+    config.classifier_hidden_states = training_config["classifier"]["layers"]
+    config.classifier_dropout = training_config["classifier"]["dropout"]
+
     model = AutoModelForAudioClassification.from_pretrained(
         FEATURE_ENCODER_TO_HF_HUB[training_config["feature_encoder"]],
-        config=config
+        config=config,
         num_labels=class_feature.num_classes,
         label2id=l2i,
         id2label=i2l,

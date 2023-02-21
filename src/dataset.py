@@ -153,15 +153,13 @@ def prepare_ds(
     if fixed_mapping:
         raise NotImplementedError()
         # TODO: Should force the way features are casted to ClassLabels
+
     ds = _cast_features(ds, df, target_features=feature_configs.keys())
-
-    if len(feature_configs) > 1:
-        # TODO
-        raise NotImplementedError()
-
     ds = ds.train_test_split(test_size=test_split_size)
 
-    # TODO ds = ds.rename_column(target_features[0], "label")
+    for f in feature_configs.keys():
+        ds = ds.rename_column(f, f"label_{f}")
+
     if save:
         ds_path = get_ds_name(feature_configs, original_path)
         ds.save_to_disk(ds_path)

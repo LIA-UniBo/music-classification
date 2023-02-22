@@ -91,6 +91,8 @@ def get_trainer(
     epochs = training_config["epochs"]
     train_batch_size = training_config["train_batch_size"]
     eval_batch_size = training_config["eval_batch_size"]
+    learning_rate = training_config["learning_rate"]
+    warmup_ratio = training_config["warmup"]
 
     if feature_extractor is None:
         feature_extractor = get_feature_extractor(training_config=training_config)
@@ -109,6 +111,8 @@ def get_trainer(
         num_train_epochs=epochs,
         per_device_train_batch_size=train_batch_size,
         per_device_eval_batch_size=eval_batch_size,
+        learning_rate=learning_rate,
+        warmup_ratio=warmup_ratio,
         evaluation_strategy="epoch",
         save_strategy="epoch",
         logging_strategy="epoch",

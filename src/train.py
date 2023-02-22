@@ -5,8 +5,8 @@ import numpy as np
 import wandb
 from transformers import AutoConfig, DataCollatorWithPadding, Trainer, TrainingArguments
 
-from src.dataset import get_feature_extractor
-from src.utils import FEATURE_ENCODER_DETAILS, get_feature_label_mapping
+from src.dataset import FEATURE_ENCODER_DETAILS, get_feature_extractor
+from src.utils import get_feature_label_mapping
 
 PROJECT_NAME = "music-classification-aii"
 DEFAULT_MAX_AUDIO_LEN_MS = (

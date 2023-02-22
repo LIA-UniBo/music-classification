@@ -60,8 +60,8 @@ def get_model(training_config, ds):
         FEATURE_ENCODER_TO_HF_HUB[training_config["feature_encoder"]]
     )
 
-    config.classifier_hidden_states = training_config["classifier"]["layers"]
-    config.classifier_dropout = training_config["classifier"]["dropout"]
+    config.classifier_hidden_states = training_config["classifier_layers"]
+    config.classifier_dropout = training_config["classifier_dropout"]
     config.num_labels = class_feature.num_classes
     config.label2id = l2i
     config.id2label = i2l

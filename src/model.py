@@ -3,12 +3,16 @@ from typing import Optional, Tuple, Union
 import torch
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss
-from transformers import WhisperFeatureExtractor
 from transformers.modeling_outputs import SequenceClassifierOutput
 from transformers.models.wav2vec2.modeling_wav2vec2 import (
-    Wav2Vec2Config, Wav2Vec2ForSequenceClassification, Wav2Vec2Model)
+    Wav2Vec2ForSequenceClassification,
+    Wav2Vec2Model,
+)
 from transformers.models.whisper.modeling_whisper import (
-    WhisperConfig, WhisperEncoder, WhisperPreTrainedModel)
+    WhisperConfig,
+    WhisperEncoder,
+    WhisperPreTrainedModel,
+)
 
 
 class ClassifierMLPHead(nn.Module):
@@ -23,11 +27,13 @@ class ClassifierMLPHead(nn.Module):
             ]
         )
         self.dropout = nn.Dropout(dropout)
+        self.relu = nn.ReLU()
 
     def forward(self, hidden_state):
-        for layer in self.classifier_dopout:
+        for layer in self.layers:
             hidden_state = layer(hidden_state)
-            hidden_state = self.dense(hidden_state)
+            hidden_state = self.dropout(hidden_state)
+            hidden_state = self.relu(hidden_state)
         return hidden_state
 
 
@@ -39,9 +45,9 @@ class WhisperForSequenceClassification(WhisperPreTrainedModel):
 
         # Classifier head
         self.head = ClassifierMLPHead(
-            embedding_size=0,  # TODO
+            embedding_size=config.d_model,
             hidden_layers=config.classifier_hidden_layers,
-            droupout=config.classifier_droupout,
+            dropout=config.classifier_dropout,
         )
         self.classifier = nn.Linear(
             config.classifier_hidden_layers[-1], config.num_labels
@@ -71,6 +77,10 @@ class WhisperForSequenceClassification(WhisperPreTrainedModel):
             return_dict if return_dict is not None else self.config.use_return_dict
         )
 
+        b, c, t = input_features.size()
+        tmp = torch.zeros(b, c, 3000).to(input_features.device)
+        tmp[:, :, :t] = input_features
+        input_features = tmp
         outputs = self.encoder(
             input_features,
             head_mask=head_mask,
@@ -78,7 +88,6 @@ class WhisperForSequenceClassification(WhisperPreTrainedModel):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
         )
-        # TODO: Transpose?
 
         hidden_states = outputs[0]
         hidden_states = self.head(hidden_states)
@@ -110,7 +119,7 @@ class Wav2Vec2ForSequenceMultiClassification(Wav2Vec2ForSequenceClassification):
         self.head = ClassifierMLPHead(
             embedding_size=config.hidden_size,
             hidden_layers=config.classifier_hidden_layers,
-            droupout=config.classifier_droupout,
+            dropout=config.classifier_dropout,
         )
         self.classifier = nn.Linear(
             config.classifier_hidden_layers[-1], config.num_labels

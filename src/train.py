@@ -93,7 +93,7 @@ def get_trainer(
     eval_batch_size = training_config["eval_batch_size"]
 
     if feature_extractor is None:
-        feature_extractor = get_feature_extractor()
+        feature_extractor = get_feature_extractor(training_config=training_config)
 
     wandb.init(
         project=PROJECT_NAME,

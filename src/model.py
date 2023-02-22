@@ -57,11 +57,7 @@ class WhisperForSequenceClassification(WhisperPreTrainedModel):
         self.post_init()
 
     def freeze_feature_encoder(self):
-        self.encoder._freeze_parameters()  # TODO Check if is the right function
-
-    def freeze_base_model(self):
-        for param in self.encoder.parameters():
-            param.requires_grad = False
+        self.encoder._freeze_parameters()
 
     def forward(
         self,
@@ -129,9 +125,6 @@ class Wav2Vec2ForSequenceMultiClassification(Wav2Vec2ForSequenceClassification):
         self.post_init()
 
     def freeze_feature_encoder(self):
-        self.wav2vec2.feature_extractor._freeze_parameters()
-
-    def freeze_base_model(self):
         for param in self.wav2vec2.parameters():
             param.requires_grad = False
 

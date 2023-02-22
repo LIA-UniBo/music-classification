@@ -149,6 +149,9 @@ def prepare_ds(
 ):
     drop_features = [f for f in DATASET_FEATURES if f not in feature_configs.keys()]
 
+    if len(feature_configs) > 1:
+        raise NotImplementedError()
+
     print("Removing extra columns from dataset")
     ds_source = ds_source.remove_columns(
         ["audio", "path"] + [f for f in drop_features if f in ds_source.features]
@@ -159,6 +162,7 @@ def prepare_ds(
 
     for split in df_splits["split"].unique():
         print(f"Extracting {split} split")
+
         # Filter dataset `ds` by IDS present in `df`
         indices_to_keep = [
             id_to_index[id_]
@@ -168,14 +172,14 @@ def prepare_ds(
         ds[split] = ds_source.select(indices_to_keep)
 
     if fixed_mapping:
-        raise NotImplementedError()
         # TODO: Should force the way features are casted to ClassLabels
+        raise NotImplementedError()
 
     print("Create `ClassLabels` for target classes")
     ds = _cast_features(ds, df_splits, target_features=feature_configs.keys())
 
     for f in feature_configs.keys():
-        ds = ds.rename_column(f, f"label_{f}")
+        ds = ds.rename_column(f, "label")
 
     if save:
         ds_path = get_ds_name(feature_configs, original_path)

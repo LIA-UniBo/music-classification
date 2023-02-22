@@ -3,16 +3,10 @@ import os
 import evaluate
 import numpy as np
 import wandb
-from transformers import (
-    AutoConfig,
-    AutoModelForAudioClassification,
-    DataCollatorWithPadding,
-    Trainer,
-    TrainingArguments,
-)
+from transformers import AutoConfig, DataCollatorWithPadding, Trainer, TrainingArguments
 
-from src.dataset import FEATURE_ENCODER_TO_HF_HUB, get_feature_extractor
-from src.utils import get_feature_label_mapping
+from src.dataset import get_feature_extractor
+from src.utils import FEATURE_ENCODER_DETAILS, get_feature_label_mapping
 
 PROJECT_NAME = "music-classification-aii"
 DEFAULT_MAX_AUDIO_LEN_MS = (
@@ -55,10 +49,9 @@ def get_metrics_func():
 def get_model(training_config, ds):
     class_feature = ds.features["label"]
     l2i, i2l = get_feature_label_mapping(class_feature)
+    fe_details = FEATURE_ENCODER_DETAILS[training_config["feature_encoder"]]
 
-    config = AutoConfig.from_pretrained(
-        FEATURE_ENCODER_TO_HF_HUB[training_config["feature_encoder"]]
-    )
+    config = AutoConfig.from_pretrained(fe_details["pretrained"])
 
     config.classifier_hidden_layers = training_config["classifier_layers"]
     config.classifier_dropout = training_config["classifier_dropout"]
@@ -66,8 +59,8 @@ def get_model(training_config, ds):
     config.label2id = l2i
     config.id2label = i2l
 
-    model = AutoModelForAudioClassification.from_pretrained(
-        FEATURE_ENCODER_TO_HF_HUB[training_config["feature_encoder"]],
+    model = fe_details["class"].from_pretrained(
+        fe_details["pretrained"],
         config=config,
     )
 

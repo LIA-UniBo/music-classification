@@ -4,6 +4,10 @@ from datasets import Audio, Dataset, DatasetDict, Features
 from sklearn.model_selection import train_test_split
 from transformers import AutoFeatureExtractor
 
+from src.model import (
+    Wav2Vec2ForSequenceMultiClassification,
+    WhisperForSequenceClassification,
+)
 from src.utils import get_ds_name, unwrap_dataset, wrap_dataset
 
 DATASET_FEATURES = [
@@ -34,9 +38,15 @@ DATASET_FEATURES = [
     "Dark",
 ]
 
-FEATURE_ENCODER_TO_HF_HUB = {
-    "wav2vec2": "facebook/wav2vec2-base",
-    "whisper": "openai/whisper-tiny",
+FEATURE_ENCODER_DETAILS = {
+    "wav2vec2": {
+        "class": Wav2Vec2ForSequenceMultiClassification,
+        "pretrained": "facebook/wav2vec2-base",
+    },
+    "whisper": {
+        "class": WhisperForSequenceClassification,
+        "pretrained": "openai/whisper-tiny",
+    },
 }
 
 
@@ -46,14 +56,15 @@ _feature_extractors = {}
 def get_feature_extractor(training_config):
     global _feature_extractors
 
-    if training_config["feature_encoder"] not in _feature_extractors:
-        _feature_extractors[
-            training_config["feature_encoder"]
-        ] = AutoFeatureExtractor.from_pretrained(
-            FEATURE_ENCODER_TO_HF_HUB[training_config["feature_encoder"]]
+    f_encoder = training_config["feature_encoder"]
+
+    if f_encoder not in _feature_extractors:
+        details = FEATURE_ENCODER_DETAILS[f_encoder]
+        _feature_extractors[f_encoder] = AutoFeatureExtractor.from_pretrained(
+            details["pretrained"]
         )
 
-    return _feature_extractors[training_config["feature_encoder"]]
+    return _feature_extractors[f_encoder]
 
 
 def filter_df(df, features_config, remove_nones=True):

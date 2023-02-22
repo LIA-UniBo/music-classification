@@ -79,8 +79,8 @@ def get_ds_name(config, ds_path):
 
 def get_run_name(config):
     freeze = "frozen" if config["freeze_encoder"] else "non-frozen"
-    layers = "-".join(config["classifier_layers"])
-    dropout = config["classifier_dropout"].replace(".", "-")
+    layers = "-".join([str(l) for l in config["classifier_layers"]])
+    dropout = str(config["classifier_dropout"]).replace(".", "-")
     return f"{config['feature_encoder']}-{freeze}-c{layers}-d{dropout}-{time.strftime('%Y%m%d-%H%M%S')}"
 
 

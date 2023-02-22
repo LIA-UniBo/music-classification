@@ -1,6 +1,6 @@
 import os
 
-from datasets import Audio, Dataset, Features
+from datasets import Audio, Dataset, DatasetDict, Features
 from sklearn.model_selection import train_test_split
 from transformers import AutoFeatureExtractor
 
@@ -61,7 +61,12 @@ def filter_df(df, features_config, remove_nones=True):
 
     drop_features = []
     if len(features_config) > 0:
-        drop_features = [f for f in DATASET_FEATURES if f not in features_config.keys()]
+        drop_features = [
+            f
+            for f in DATASET_FEATURES
+            if f not in features_config.keys()
+            if f in df.columns
+        ]
         print(f"{len(DATASET_FEATURES) - len(drop_features)} features considered")
 
     # Using .mp3 files paths
@@ -124,7 +129,10 @@ def split_df(df, validation_size, test_size=None):
     else:
         dfs["valid"] = temp_df
 
-    return dfs
+    for split, df_split in dfs.items():
+        df.loc[df["id"].isin(df_split["id"]), "split"] = split
+
+    return df
 
 
 def get_dataset(df):
@@ -132,30 +140,39 @@ def get_dataset(df):
 
 
 def prepare_ds(
-    ds: Dataset,
-    df,
+    ds_source: Dataset,
+    df_splits,
     feature_configs,
-    test_split_size,
     fixed_mapping=None,
     save=False,
     original_path=None,
 ):
     drop_features = [f for f in DATASET_FEATURES if f not in feature_configs.keys()]
 
-    # Filter dataset `ds` by IDS present in `df`
-    id_to_index = {id_: i for i, id_ in enumerate(ds["id"])}
-    indices_to_keep = [id_to_index[id_] for id_ in set(df["id"]) if id_ in id_to_index]
-    ds = ds.select(indices_to_keep)
-    ds = ds.remove_columns(
-        ["audio", "path"] + [f for f in drop_features if f in ds.features]
+    print("Removing extra columns from dataset")
+    ds_source = ds_source.remove_columns(
+        ["audio", "path"] + [f for f in drop_features if f in ds_source.features]
     )
+
+    ds = DatasetDict()
+    id_to_index = {id_: i for i, id_ in enumerate(ds_source["id"])}
+
+    for split in df_splits["split"].unique():
+        print(f"Extracting {split} split")
+        # Filter dataset `ds` by IDS present in `df`
+        indices_to_keep = [
+            id_to_index[id_]
+            for id_ in set(df_splits[df_splits["split"] == split]["id"])
+            if id_ in id_to_index
+        ]
+        ds[split] = ds_source.select(indices_to_keep)
 
     if fixed_mapping:
         raise NotImplementedError()
         # TODO: Should force the way features are casted to ClassLabels
 
-    ds = _cast_features(ds, df, target_features=feature_configs.keys())
-    ds = ds.train_test_split(test_size=test_split_size)
+    print("Create `ClassLabels` for target classes")
+    ds = _cast_features(ds, df_splits, target_features=feature_configs.keys())
 
     for f in feature_configs.keys():
         ds = ds.rename_column(f, f"label_{f}")

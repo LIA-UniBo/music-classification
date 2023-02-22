@@ -1,3 +1,5 @@
+import time
+
 import datasets
 import IPython.display as ipd
 import numpy as np
@@ -73,6 +75,13 @@ def get_csv_name(config, csv_path):
 def get_ds_name(config, ds_path):
     path_pieces = [ds_path] + _get_file_suffixes(config)
     return "_".join(path_pieces)
+
+
+def get_run_name(config):
+    freeze = "frozen" if config["freeze_encoder"] else "non-frozen"
+    layers = "-".join(config["classifier_layers"])
+    dropout = config["classifier_dropout"].replace(".", "-")
+    return f"{config['feature_encoder']}-{freeze}-c{layers}-d{dropout}-{time.strftime('%Y%m%d-%H%M%S')}"
 
 
 def _get_file_suffixes(config):

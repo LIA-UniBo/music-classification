@@ -38,7 +38,8 @@ def play_audios(samples, label_maps=None, print_features=[]):
 
 def play_random_audios(ds, quantity, print_features=[]):
     play_audios(
-        ds.select(np.random.randint(0, len(ds), quantity)),
+        ds.select(np.random.choice(range(len(ds)), quantity, replace=False)),
+        # ds.select(np.random.randint(0, len(ds), quantity)),
         get_dataset_label_mapping(ds),
         print_features=print_features,
     )

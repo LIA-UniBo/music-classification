@@ -38,6 +38,44 @@ DATASET_FEATURES = [
     "Dark",
 ]
 
+CLUSTERS = {
+    "genre": {
+        "World/Ethnic": "World/Ethnic",
+        "Chinese Traditional": "World/Ethnic",
+        "Hip Hop/RnB": "Hip Hop/RnB",
+        "Hip Hop/R&B": "Hip Hop/RnB",
+        "Hip Hop": "Hip Hop/RnB",
+        "Modern RnB": "Hip Hop/RnB",
+        "Urban": "Hip Hop/RnB",
+        "Electronic": "Electronic",
+        "Electronic/Dance": "Electronic",
+        "Chillwave": "Electronic",
+        "Electronic Pop": "Electronic",
+        "Techno": "Electronic",
+        "House": "House",
+        "Bass House": "House",
+        "Deep House": "House",
+        "Tech House": "House",
+        "Electro House": "House",
+    },
+    "clusters": {
+        "Drums": "Drums",
+        "Drum Kit": "Drums",
+        "Vocals": "Vocals",
+        "Female": "Vocals",
+        "Male": "Vocals",
+        "Bass": "Bass",
+        "Synthetic Bass": "Bass",
+        "Electric Bass": "Bass",
+        "Guitars": "Guitars",
+        "Electric Guitar": "Guitars",
+        "Keyboards": "Keyboards",
+        "Piano": "Keyboards",
+        "Electric Piano": "Keyboards",
+        "Synthesizer": "Keyboards",
+    },
+}
+
 FEATURE_ENCODER_DETAILS = {
     "wav2vec2": {
         "class": Wav2Vec2ForSequenceMultiClassification,
@@ -154,6 +192,7 @@ def prepare_ds(
     ds_source: Dataset,
     df_splits,
     feature_configs,
+    clustered=True,
     fixed_mapping=None,
     save=False,
     original_path=None,
@@ -169,6 +208,17 @@ def prepare_ds(
         + (["path"] if "audio" in ds_source.features else [])
         + [f for f in drop_features if f in ds_source.features]
     )
+
+    if clustered:
+        print("Mapping features clusters")
+        for f in feature_configs.keys():
+
+            def mapx(example):
+                if example[f] in CLUSTERS[f]:
+                    example[f] = CLUSTERS[f][example[f]]
+                return example
+
+            ds_source = ds_source.map(mapx)
 
     ds = DatasetDict()
     id_to_index = {id_: i for i, id_ in enumerate(ds_source["id"])}
@@ -229,6 +279,7 @@ def _get_features_dict(df, target_features):
 
 def _cast_features(ds, df, target_features):
     features = Features.from_dict(_get_features_dict(df, target_features))
+    print(features)
     for f, args in features.items():
         ds = ds.cast_column(f, args)
     return ds

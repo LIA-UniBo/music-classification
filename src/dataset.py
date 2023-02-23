@@ -165,7 +165,9 @@ def prepare_ds(
 
     print("Removing extra columns from dataset")
     ds_source = ds_source.remove_columns(
-        ["audio", "path"] + [f for f in drop_features if f in ds_source.features]
+        (["audio"] if "audio" in ds_source.features else [])
+        + (["path"] if "audio" in ds_source.features else [])
+        + [f for f in drop_features if f in ds_source.features]
     )
 
     ds = DatasetDict()

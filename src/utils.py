@@ -17,24 +17,37 @@ def convert_if_label(sample, feature, label_maps):
         return value
 
 
+def play_audio(audio):
+    ipd.display(
+        ipd.Audio(
+            data=audio["array"],
+            autoplay=False,
+            rate=audio["sampling_rate"],
+        )
+    )
+
+
 def play_audios(samples, label_maps=None, print_features=[]):
     for sample in samples:
         descr = []
         for f in print_features:
             descr.append(f"{f}: {convert_if_label(sample, f, label_maps)}")
         print(" - ".join(descr))
-        ipd.display(
-            ipd.Audio(
-                data=sample["audio"]["array"],
-                autoplay=False,
-                rate=sample["audio"]["sampling_rate"],
-            )
-        )
+        play_audio(samples["audio"])
 
 
 def play_random_audios(ds, quantity, print_features=[]):
     play_audios(
         ds.select(np.random.randint(0, len(ds), quantity)),
+        get_dataset_label_mapping(ds),
+        print_features=print_features,
+    )
+
+
+def play_audios_by_id(ds, ids, print_features=[]):
+    id_to_index = {id_: i for i, id_ in enumerate(ds["id"])}
+    play_audios(
+        ds.select([id_to_index[idx] for idx in ids]),
         get_dataset_label_mapping(ds),
         print_features=print_features,
     )
@@ -77,11 +90,15 @@ def get_ds_name(config, ds_path):
     return "_".join(path_pieces)
 
 
+def get_model_name(config):
+    freeze = "frz" if config["freeze_encoder"] else "fnt"
+    layers = "_".join([str(layer) for layer in config["classifier_layers"]])
+    dropout = str(config["classifier_dropout"]).split(".")[-1]
+    return f"{config['feature_encoder']}-{freeze}-c{layers}-d{dropout}"
+
+
 def get_run_name(config):
-    freeze = "frozen" if config["freeze_encoder"] else "non-frozen"
-    layers = "-".join([str(l) for l in config["classifier_layers"]])
-    dropout = str(config["classifier_dropout"]).replace(".", "-")
-    return f"{config['feature_encoder']}-{freeze}-c{layers}-d{dropout}-{time.strftime('%Y%m%d-%H%M%S')}"
+    return f"{get_model_name(config)}-{time.strftime('%Y%m%d-%H%M%S')}"
 
 
 def _get_file_suffixes(config):

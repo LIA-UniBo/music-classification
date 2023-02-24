@@ -4,8 +4,10 @@ from datasets import Audio, Dataset, DatasetDict, Features
 from sklearn.model_selection import train_test_split
 from transformers import AutoFeatureExtractor
 
-from src.model import (Wav2Vec2ForSequenceMultiClassification,
-                       WhisperForSequenceClassification)
+from src.model import (
+    Wav2Vec2ForSequenceMultiClassification,
+    WhisperForSequenceClassification,
+)
 from src.utils import get_ds_name, unwrap_dataset, wrap_dataset
 
 DATASET_FEATURES = [

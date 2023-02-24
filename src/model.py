@@ -14,6 +14,8 @@ from transformers.models.whisper.modeling_whisper import (
     WhisperPreTrainedModel,
 )
 
+WHISPER_INPUT_SEGMENTS = 3000
+
 
 class ClassifierMLPHead(nn.Module):
     def __init__(self, embedding_size, hidden_layers, dropout):
@@ -73,10 +75,15 @@ class WhisperForSequenceClassification(WhisperPreTrainedModel):
             return_dict if return_dict is not None else self.config.use_return_dict
         )
 
+        # Pad the input mel-spectrogram to have size BxCx3000
+        # TODO: Move in dedicated DataCollator
         b, c, t = input_features.size()
-        tmp = torch.zeros(b, c, 3000).to(input_features.device)
-        tmp[:, :, :t] = input_features
-        input_features = tmp
+        padded_input = torch.zeros(b, c, WHISPER_INPUT_SEGMENTS).to(
+            input_features.device
+        )
+        padded_input[:, :, :t] = input_features
+        input_features = padded_input
+
         outputs = self.encoder(
             input_features,
             head_mask=head_mask,

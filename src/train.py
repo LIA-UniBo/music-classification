@@ -12,9 +12,7 @@ from src.dataset import FEATURE_ENCODER_DETAILS, get_feature_extractor
 from src.utils import get_feature_label_mapping
 
 PROJECT_NAME = "music-classification-aii"
-DEFAULT_MAX_AUDIO_LEN_MS = (
-    10_000  # TODO: Transformers are O(n^2) so high audio len could be prohibitive
-)
+DEFAULT_MAX_AUDIO_LEN_MS = 10_000
 
 
 def get_preprocess_func(training_config, max_audio_len_ms=DEFAULT_MAX_AUDIO_LEN_MS):

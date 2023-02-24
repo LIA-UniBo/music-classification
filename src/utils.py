@@ -114,6 +114,6 @@ def _get_file_suffixes(config):
     return suffix
 
 
-def debug_sample_to_wav(audio: datasets.Audio, filename: str):
+def _debug_sample_to_wav(audio: datasets.Audio, filename: str):
     data = np.array(audio["array"]).astype(np.int16)
     write(filename, audio["sampling_rate"], data)

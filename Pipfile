@@ -21,7 +21,6 @@ ffmpeg-python = "*"
 [dev-packages]
 ipykernel = "*"
 ipywidgets = "*"
-scipy = "*"
 
 [requires]
 python_version = "3.10"

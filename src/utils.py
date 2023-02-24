@@ -33,7 +33,7 @@ def play_audios(samples, label_maps=None, print_features=[]):
         for f in print_features:
             descr.append(f"{f}: {convert_if_label(sample, f, label_maps)}")
         print(" - ".join(descr))
-        play_audio(samples["audio"])
+        play_audio(sample["audio"])
 
 
 def play_random_audios(ds, quantity, print_features=[]):
